@@ -9,13 +9,33 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.kjw.chatclientprototype.MainActivity">
-
+    <fragment
+        android:layout_width="300dp"
+        android:layout_height="100dp"
+        android:id="@+id/fragment_place"
+        android:layout_alignParentTop="true"
+        android:name="com.example.kjw.chatclientprototype.BlankFragment"
+        tools:layout="@layout/fragment_blank" />
     <EditText
         android:layout_width="match_parent"
         android:layout_height="100dp"
         android:hint="Please input accessToken"
         android:layout_centerInParent="true"
         android:id="@+id/input_accessToken"/>
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:hint="Please input id"
+        android:layout_above="@id/input_accessToken"
+        android:layout_centerInParent="true"
+        android:id="@+id/input_id"/>
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:hint="Please input nick"
+        android:layout_above="@id/input_id"
+        android:layout_centerInParent="true"
+        android:id="@+id/input_nick"/>
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -31,5 +51,13 @@
         android:layout_centerInParent="true"
         android:id="@+id/login_btn"
         android:text="로그인"/>
+    <Button
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_below="@id/receive_text"
+        android:layout_centerInParent="true"
+        android:layout_toRightOf="@id/login_btn"
+        android:id="@+id/logout_btn"
+        android:text="로그아웃"/>
 
 </RelativeLayout>
