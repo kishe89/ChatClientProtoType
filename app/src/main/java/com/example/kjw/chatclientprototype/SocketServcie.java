@@ -3,6 +3,7 @@ package com.example.kjw.chatclientprototype;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,8 @@ import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Date;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -30,6 +33,8 @@ public class SocketServcie extends Service {
     private Socket mSocket;
     private ServiceMessageListener listener;
     private Context mContext;
+    private MessageListener msglistener;
+
     public Socket getmSocket() {
         Log.e(TAG,mSocket.toString());
         return mSocket;
@@ -71,6 +76,7 @@ public class SocketServcie extends Service {
         mSocket.on("login_success",onLogin);
         mSocket.on("login_fail",onLoginFail);
         mSocket.on("logout_success",onLogout);
+        mSocket.on("message",onMessage);
         Log.e(TAG,"onCreate finish");
     }
 
@@ -81,7 +87,42 @@ public class SocketServcie extends Service {
         listener = null;
     }
 
-
+    private Emitter.Listener onMessage = new Emitter.Listener() {
+        @Override
+        public void call(Object... args) {
+            Log.e(TAG,"onMessage");
+            JSONObject data = (JSONObject) args[0];
+            Log.e(TAG,data.toString());
+            NotificationCompat.Builder mBuilder =
+                    null;
+            try {
+                mBuilder = new NotificationCompat.Builder(mContext)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle(data.getString("user"))
+                        .setContentText(data.getString("message"));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            Intent notificationIntent = new Intent(getApplicationContext(), ChatActivity.class);
+            PendingIntent contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            mBuilder.setDefaults(Notification.DEFAULT_SOUND);
+            mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
+            mBuilder.setAutoCancel(true);
+            mBuilder.setContentIntent(contentIntent);
+            NotificationManager mNotificationManager =
+                    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+// mId allows you to update the notification later on.
+            mNotificationManager.notify(1, mBuilder.build());
+            if(msglistener!=null){
+                try {
+                    msglistener.OnReceiveEvent(new SocketEvent(data.getString("message"),data.getString("user"),new Date(data.getString("date"))));
+                } catch (JSONException e) {
+                    Log.e(TAG,"message parsing fail");
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
     private Emitter.Listener onLoginFail = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
@@ -130,5 +171,8 @@ public class SocketServcie extends Service {
     };
     public void setOnServiceMessageListener(ServiceMessageListener listener){
         this.listener = listener;
+    }
+    public void setOnMessageListener(MessageListener listener){
+        this.msglistener = listener;
     }
 }

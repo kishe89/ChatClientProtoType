@@ -18,42 +18,55 @@
         tools:layout="@layout/fragment_blank" />
     <EditText
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="80dp"
         android:hint="Please input accessToken"
         android:layout_centerInParent="true"
         android:id="@+id/input_accessToken"/>
     <EditText
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="80dp"
         android:hint="Please input id"
         android:layout_above="@id/input_accessToken"
         android:layout_centerInParent="true"
         android:id="@+id/input_id"/>
     <EditText
         android:layout_width="match_parent"
-        android:layout_height="100dp"
+        android:layout_height="80dp"
         android:hint="Please input nick"
         android:layout_above="@id/input_id"
         android:layout_centerInParent="true"
         android:id="@+id/input_nick"/>
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:hint="Please input room"
+        android:layout_below="@id/input_accessToken"
+        android:id="@+id/input_room"/>
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/receive_text"
-        android:layout_below="@id/input_accessToken"
+        android:layout_below="@id/input_room"
         android:layout_centerInParent="true"
         android:textSize="16sp"
         android:hint="receive text" />
     <Button
         android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_height="80dp"
         android:layout_below="@id/receive_text"
         android:layout_centerInParent="true"
         android:id="@+id/login_btn"
         android:text="로그인"/>
     <Button
         android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_height="80dp"
+        android:layout_toLeftOf="@id/login_btn"
+        android:layout_below="@id/receive_text"
+        android:id="@+id/joinroom_btn"
+        android:text="방접속"/>
+    <Button
+        android:layout_width="100dp"
+        android:layout_height="80dp"
         android:layout_below="@id/receive_text"
         android:layout_centerInParent="true"
         android:layout_toRightOf="@id/login_btn"

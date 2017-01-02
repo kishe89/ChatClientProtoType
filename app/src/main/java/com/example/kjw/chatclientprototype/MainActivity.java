@@ -25,9 +25,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView receive_text;
     private Button login_btn;
     private Button logout_btn;
+    private Button joinroom_btn;
     private EditText input_accessToken;
     private EditText input_id;
     private EditText input_nick;
+    private EditText input_room;
 
     private MsgListener listener;
     private Socket mSocket;
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean mBound;
     private Context chatApplication;
     private SocketServcie mService;
+    private Intent intent;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -121,11 +124,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         receive_text = (TextView)findViewById(R.id.receive_text);
         login_btn = (Button)findViewById(R.id.login_btn);
         logout_btn = (Button)findViewById(R.id.logout_btn);
+        joinroom_btn = (Button)findViewById(R.id.joinroom_btn);
         input_accessToken = (EditText)findViewById(R.id.input_accessToken);
         input_id = (EditText)findViewById(R.id.input_id);
         input_nick = (EditText)findViewById(R.id.input_nick);
+        input_room = (EditText)findViewById(R.id.input_room);
         login_btn.setOnClickListener(this);
         logout_btn.setOnClickListener(this);
+        joinroom_btn.setOnClickListener(this);
     }
 
     @Override
@@ -155,6 +161,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     e.printStackTrace();
                 }
                 mSocket.emit("logout",logout);
+                break;
+            case R.id.joinroom_btn:
+                JSONObject room = new JSONObject();
+                try {
+                    room.put("room",input_room.getText().toString());
+                } catch (JSONException e) {
+                    Log.e(TAG,"room json not created");
+                    e.printStackTrace();
+                }
+
+                mSocket.emit("joinRooom",room);
+                intent = new Intent(this,ChatActivity.class);
+                intent.putExtra("userName",input_nick.getText().toString());
+                intent.putExtra("roomName",input_room.getText().toString());
+                startActivity(intent);
+                finish();
                 break;
             default:break;
         }
