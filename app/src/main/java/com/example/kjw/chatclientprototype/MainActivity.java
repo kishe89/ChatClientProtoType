@@ -38,10 +38,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Context chatApplication;
     private SocketServcie mService;
     private Intent intent;
+    private PreferenceManager preferenceManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        preferenceManager = new PreferenceManager(getApplicationContext());
         self = this;
         chatApplication = ChatApplication.getContext();
         startService(new Intent(chatApplication,SocketServcie.class));
@@ -151,7 +153,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                mSocket.emit("login",jsonObject);
+                mSocket.emit("add user",jsonObject);
+                preferenceManager.setUserName(accessToken.getNick());
+                intent = new Intent(this,ChatActivity.class);
+                startActivity(intent);
+                finish();
                 break;
             case R.id.logout_btn:
                 JSONObject logout = new JSONObject();
@@ -172,11 +178,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
 
                 mSocket.emit("joinRooom",room);
-                intent = new Intent(this,ChatActivity.class);
-                intent.putExtra("userName",input_nick.getText().toString());
-                intent.putExtra("roomName",input_room.getText().toString());
-                startActivity(intent);
-                finish();
+//                intent = new Intent(this,ChatActivity.class);
+//                intent.putExtra("userName",input_nick.getText().toString());
+//                intent.putExtra("roomName",input_room.getText().toString());
+//                startActivity(intent);
+//                finish();
                 break;
             default:break;
         }

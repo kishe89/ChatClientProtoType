@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 
@@ -52,8 +53,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
     @Override
     public void onBindViewHolder(ViewHolder viewHolder, int position) {
         Message message = mMessages.get(position);
+        SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss a");
         viewHolder.setMessage(message.getMessage());
         viewHolder.setUsername(message.getUsername());
+        viewHolder.setmMessageTime(sdf.format(message.getDate()));
     }
 
     @Override
@@ -71,7 +74,7 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
         private TextView mMessageView;
         private Button mRetrysendBtn;
         private ImageView thumnailView;
-
+        private TextView mMessageTime;
         public ViewHolder(View itemView) {
             super(itemView);
 
@@ -79,8 +82,15 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.ViewHold
             mMessageView = (TextView) itemView.findViewById(R.id.message);
             mRetrysendBtn = (Button) itemView.findViewById(R.id.retry_sendBtn);
             thumnailView = (ImageView) itemView.findViewById(R.id.thumnailView);
+            mMessageTime = (TextView) itemView.findViewById(R.id.message_time);
 
         }
+
+        public void setmMessageTime(String mMessageTime) {
+            if(null == mMessageTime) return;
+            this.mMessageTime.setText(mMessageTime);
+        }
+
         public void setThumnail(String url){
             if(null == thumnailView) return;
             //set imageview uri

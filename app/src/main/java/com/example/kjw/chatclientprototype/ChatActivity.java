@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.preference.Preference;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -21,6 +22,7 @@ import android.widget.TextView;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -37,24 +39,19 @@ public class ChatActivity extends AppCompatActivity implements MessageListener{
     private List<Message> mMessages = new ArrayList<Message>();
     private RecyclerView.Adapter mAdapter;
     private String mUsername;
-    private String mRoomname;
     private Socket mSocket;
-    private Intent intent;
     private boolean mBound;
     private SocketServcie mService;
     private ChatActivity self;
-
+    private PreferenceManager preferenceManager;
     private HashMap<String,Message> messageMap = new HashMap<String,Message>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
         self = this;
-
-        intent=getIntent();
-
-        mUsername = intent.getStringExtra("userName");
-        mRoomname = intent.getStringExtra("roomName");
+        preferenceManager = new PreferenceManager(getApplicationContext());
+        mUsername = preferenceManager.getUserName();
         mAdapter = new MessageAdapter(this, mMessages);
         mMessagesView = (RecyclerView) findViewById(R.id.messages);
         mMessagesView.setLayoutManager(new LinearLayoutManager(this));
@@ -98,13 +95,12 @@ public class ChatActivity extends AppCompatActivity implements MessageListener{
         JSONObject msgObj = new JSONObject();
         try {
             msgObj.put("message",message);
-            msgObj.put("room",mRoomname);
             msgObj.put("user",mUsername);
             msgObj.put("date",mDate.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        mSocket.emit("chat", msgObj);
+        mSocket.emit("new message", msgObj);
     }
 
     private void addMessage(final String username, final String message,final Date mDate) {
@@ -114,7 +110,7 @@ public class ChatActivity extends AppCompatActivity implements MessageListener{
                 Message inputMessage = new Message.Builder(Message.TYPE_MY_MESSAGE)
                         .username(username).message(message).date(mDate).position(mMessages.size()).build();
                 mMessages.add(inputMessage);
-                messageMap.put(inputMessage.getDate().toString(),inputMessage);
+                messageMap.put(inputMessage.getDate().toString()+mUsername,inputMessage);
                 mAdapter.notifyItemInserted(mMessages.size() - 1);
                 scrollToBottom();
             }
@@ -140,7 +136,7 @@ public class ChatActivity extends AppCompatActivity implements MessageListener{
                 Message target_message = mMessages.get(inputMessage.getPosition());
                 target_message.setmType(Message.TYPE_ALLOWMESSAGE);
                 mMessages.set(inputMessage.getPosition(),target_message);
-                messageMap.remove(inputMessage.getDate());
+                messageMap.remove(inputMessage.getDate()+mUsername);
                 mAdapter.notifyItemChanged(inputMessage.getPosition());
                 scrollToBottom();
             }
@@ -178,8 +174,14 @@ public class ChatActivity extends AppCompatActivity implements MessageListener{
             mService.setMyActivity(self);
             mService.setOnMessageListener(ChatActivity.this);
             mSocket = mService.getmSocket();
-            Log.e(TAG,mSocket.id().toString());
-
+            mUsername = preferenceManager.getUserName();
+            JSONObject jsonObject = new JSONObject();
+            try {
+                jsonObject.put("nick",mUsername);
+                mSocket.emit("add user",jsonObject);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
     };
 
@@ -187,13 +189,14 @@ public class ChatActivity extends AppCompatActivity implements MessageListener{
     protected void onPause() {
         // TODO Auto-generated method stub
         super.onPause();
-
+        mService.setMyActivity(null);
     }
 
     @Override
     protected void onStop() {
         // TODO Auto-generated method stub
         super.onStop();
+        mService.setMyActivity(null);
     }
 
     @Override
@@ -211,26 +214,61 @@ public class ChatActivity extends AppCompatActivity implements MessageListener{
     @Override
     public void OnReceiveEvent(SocketEvent event) {
         Log.e(TAG,event.toString());
-        if(messageMap.containsKey(event.getmDate().toString())){
-            if(messageMap.get(event.getmDate().toString()).getUsername().equals(mUsername)){
+        if(messageMap.containsKey(event.getmDate().toString()+mUsername)){
+            if(messageMap.get(event.getmDate().toString()+mUsername).getUsername().equals(mUsername)){
                 //my message echo
                 //require update message status
                 Log.e(TAG,event.getmDate()+":"+event.getMessage());
-                updateMessage(messageMap.get(event.getmDate().toString()));
+                updateMessage(messageMap.get(event.getmDate().toString()+mUsername));
             }else{
                 //another message
                 Log.e("Adding",event.getmDate()+":"+event.getMessage());
-                addMessage(event.getUser(),event.getMessage(),event.getmDate());
+                addAnotherMessage(event.getUser(),event.getMessage(),event.getmDate());
+
             }
             return;
         }
         else{
             Log.e(TAG,"Not equal Time");
-            Log.e(TAG,event.getmDate()+":"+event.getMessage());
+            Log.e(TAG,event.getUser()+":"+event.getmDate()+":"+event.getMessage());
+            if(mUsername == null){
+                Log.e(TAG,"NULL!!mUsername");
+                return;
+            }
+            if(mUsername.equals(event.getUser())){
+                addMessage(event.getUser(),event.getMessage(),event.getmDate());
+            }else{
+                addAnotherMessage(event.getUser(),event.getMessage(),event.getmDate());
+            }
         }
+
         //message from another
-        addAnotherMessage(event.getUser(),event.getMessage(),event.getmDate());
+//        addAnotherMessage(event.getUser(),event.getMessage(),event.getmDate());
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putString("mUserName", mUsername);
+        outState.putSerializable("mMessage", (Serializable) mMessages);
+        super.onSaveInstanceState(outState);
+    }
 
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        mUsername = savedInstanceState.getString("mUserName",null);
+        mMessages = (List<Message>) savedInstanceState.getSerializable("mMessage");
+        Intent intent = new Intent(ChatActivity.this,MainActivity.class);
+        if(mUsername == null){
+            this.finish();
+            startActivity(intent);
+            return;
+        }
+        if(mMessages == null){
+            this.finish();
+            startActivity(intent);
+            return;
+        }
+
+    }
 }

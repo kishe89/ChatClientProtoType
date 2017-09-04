@@ -34,7 +34,7 @@ public class SocketServcie extends Service {
     private ServiceMessageListener listener;
     private Context mContext;
     private MessageListener msglistener;
-
+    private PreferenceManager preferenceManager;
     public Socket getmSocket() {
         Log.e(TAG,mSocket.toString());
         return mSocket;
@@ -50,7 +50,22 @@ public class SocketServcie extends Service {
     }
     public void setMyActivity(Activity myActivity) {
         this.myActivity = myActivity;
-        Log.d(TAG, "setMyActivity");
+        preferenceManager = new PreferenceManager(mContext);
+        Log.d(TAG, "setMyActivity : "+((myActivity!=null)?myActivity.getClass():"null"));
+        if(myActivity==null)return;
+        if(myActivity.getClass().toString().contains("MainActivity")){
+            if(preferenceManager.getUserName()==null)
+            {
+                Intent intent = new Intent(myActivity,MainActivity.class);
+                myActivity.finish();
+                myActivity.startActivity(intent);
+                return;
+            }else{
+                Intent intent = new Intent(myActivity,ChatActivity.class);
+                myActivity.finish();
+                myActivity.startActivity(intent);
+            }
+        }
     }
     @Nullable
     @Override
@@ -76,7 +91,7 @@ public class SocketServcie extends Service {
         mSocket.on("login_success",onLogin);
         mSocket.on("login_fail",onLoginFail);
         mSocket.on("logout_success",onLogout);
-        mSocket.on("message",onMessage);
+        mSocket.on("new message",onMessage);
         Log.e(TAG,"onCreate finish");
     }
 
@@ -90,7 +105,7 @@ public class SocketServcie extends Service {
     private Emitter.Listener onMessage = new Emitter.Listener() {
         @Override
         public void call(Object... args) {
-            Log.e(TAG,"onMessage");
+            Log.e(TAG,"new message");
             JSONObject data = (JSONObject) args[0];
             Log.e(TAG,data.toString());
             NotificationCompat.Builder mBuilder =
@@ -100,27 +115,26 @@ public class SocketServcie extends Service {
                         .setSmallIcon(R.mipmap.ic_launcher)
                         .setContentTitle(data.getString("user"))
                         .setContentText(data.getString("message"));
+
+                Intent notificationIntent = new Intent(mContext, ChatActivity.class);
+                notificationIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                PendingIntent contentIntent = PendingIntent.getActivity(mContext, 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                mBuilder.setContentIntent(contentIntent);
+                mBuilder.setDefaults(Notification.DEFAULT_SOUND);
+                mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
+                mBuilder.setAutoCancel(true);
+                NotificationManager mNotificationManager =
+                        (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+// mId allows you to update the notification later on.
+                mNotificationManager.notify(1, mBuilder.build());
+                if(msglistener!=null){
+                    Log.e(TAG,data.getString("user"));
+                    msglistener.OnReceiveEvent(new SocketEvent(data.getString("message"),data.getString("user"),new Date(data.getString("date"))));
+                }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            Intent notificationIntent = new Intent(getApplicationContext(), ChatActivity.class);
-            PendingIntent contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            mBuilder.setDefaults(Notification.DEFAULT_SOUND);
-            mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
-            mBuilder.setAutoCancel(true);
-            mBuilder.setContentIntent(contentIntent);
-            NotificationManager mNotificationManager =
-                    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-// mId allows you to update the notification later on.
-            mNotificationManager.notify(1, mBuilder.build());
-            if(msglistener!=null){
-                try {
-                    msglistener.OnReceiveEvent(new SocketEvent(data.getString("message"),data.getString("user"),new Date(data.getString("date"))));
-                } catch (JSONException e) {
-                    Log.e(TAG,"message parsing fail");
-                    e.printStackTrace();
-                }
-            }
+
         }
     };
     private Emitter.Listener onLoginFail = new Emitter.Listener() {
@@ -134,20 +148,20 @@ public class SocketServcie extends Service {
         public void call(Object... args) {
             JSONObject data = (JSONObject) args[0];
             int count;
-            boolean status;
-            final String userId;
+            int status;
+            final String username;
             try {
-                userId = data.getString("id");
-                status = data.getBoolean("status");
+                username = data.getString("username");
+                status = data.getInt("numUsers");
             } catch (JSONException e) {
                 Log.e(TAG,e.toString());
                 return;
             }
-            Log.e(TAG,userId);
+            Log.e(TAG,username);
             NotificationCompat.Builder mBuilder =
                     new NotificationCompat.Builder(mContext)
                             .setSmallIcon(R.mipmap.ic_launcher)
-                            .setContentTitle(userId)
+                            .setContentTitle(username)
                             .setContentText("hello");
             mBuilder.setDefaults(Notification.DEFAULT_SOUND);
             mBuilder.setPriority(NotificationCompat.PRIORITY_MAX);
@@ -157,7 +171,7 @@ public class SocketServcie extends Service {
 // mId allows you to update the notification later on.
             mNotificationManager.notify(1, mBuilder.build());
             if(listener!=null){
-                listener.OnReceiveEvent(new SocketEvent(userId));
+                listener.OnReceiveEvent(new SocketEvent(username));
             }
         }
     };

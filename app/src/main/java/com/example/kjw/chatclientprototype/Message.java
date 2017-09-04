@@ -1,5 +1,6 @@
 package com.example.kjw.chatclientprototype;
 
+import java.io.Serializable;
 import java.util.Date;
 /**
  * 사용자 입력 및 서버로 부터 응답 메시지 클래스
@@ -20,7 +21,7 @@ import java.util.Date;
  * @version 1.0, 2017.1.2 클래스 생성
  * @todo 메시지 생성후 빌더로 빌드
  */
-public class Message {
+public class Message implements Serializable {
 
 
     public static final int TYPE_MY_MESSAGE = 0;
